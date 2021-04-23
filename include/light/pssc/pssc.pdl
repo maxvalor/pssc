@@ -1,0 +1,60 @@
+[Step-1]
+Client -- request call --> Core
+Core -- deliver call --> Server
+Server -- deliver call ack --> Core
+Core -- request call ack --> Client
+
+[Step-2]
+Server -- response call --> Core
+Core -- deliver response call --> Client
+Client -- deliver response call ack --> Core
+Core -- response call ack --> Server
+
+
+pssc_send_request_call(std::make_shared<pssc_msg> req)
+{
+    tcp_conn->SendRequest(req);
+}
+
+pssc_wait_response(std::uint64_t id)
+{
+    return tcp_conn->WaitForResponse();
+}
+
+pssc_remote_call(std::string name, std::uint8_t* data, size_t size)
+{
+    auto req = std::make_shared<pssc_msg>(psscIdGenerator::Next(), REMOTE_CALL_REQ, 
+        name, data, size);
+    pssc_send_request_call(req);
+    return pssc_wait_response(req->id);
+}
+
+pssc_publish(std::string name, std::uint8_t* data, size_t size, bool feedback = true)
+{
+    auto req = { 
+        psscIdGenerator::Next(), PUBLISH, 
+        name, data, size, feedback };
+        
+    tcp_conn->SendRequest(req);
+}
+
+on_msg(std::string topic, std::uint8_t* data, size_t size)
+{
+
+}
+
+bool on_service(std::string srv, std::uint8_t* data, size_t size)
+{
+
+}
+
+void process()
+{
+    pssc_register_node("abc");
+    pssc_set_topic_callback(on_msg);
+    pssc_set_service_callback(on_service);
+
+    auto resp = pssc_remote_call("test", payload, size);
+    pssc_publish("test", payload, size);
+}
+
