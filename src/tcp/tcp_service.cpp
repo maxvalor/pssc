@@ -35,6 +35,9 @@ void TCPService::Accept()
 {
 	_acceptor.async_accept(_socket, [this](boost::system::error_code ec)
 	{
+	    tcp::no_delay option(true);
+	    _socket.set_option(option);
+
 		if (!ec && _currentConnections < MAX_CONNECTIONS)
 		{
 			++_currentConnections;

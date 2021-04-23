@@ -31,6 +31,8 @@ void TCPClient::Run()  {
 bool TCPClient::Connect()
 {
 	_socket.connect(_ep);
+    tcp::no_delay option(true);
+    _socket.set_option(option);
 	auto conn = std::make_shared<TCPConnection>(std::move(_socket), OnDisconnected);
 	conn->Start();
 	OnConnected(conn);
