@@ -6,7 +6,7 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-#include "light/pssc/PsscClient.h"
+#include "pssc/protocol/Node.h"
 #include <stdio.h>
 
 class Rate
@@ -86,28 +86,29 @@ public:
 
 };
 
+#define SEND_SIZE 1920 * 1080 * 3
 
 int main(int argc, char*argv[]) {
-	pssc::PsscClient client;
-	client.SetTopicCallback([](std::string topic, std::uint8_t* data, size_t size)
+	pssc::Node node;
+	node.SetTopicCallback([](std::string topic, std::uint8_t* data, size_t size)
 	{
 		LOG(INFO) << "topic:" << topic;
 		int i;
-		memcpy(&i, data, size);
+		memcpy(&i, data, sizeof(i));
 		LOG(INFO) << "data:" << i;
+		LOG(INFO) << "total size:" << size;
 	});
-	client.Initialize(std::string(argv[1]), 20001);
-	client.Subscribe("test_topic");
-	std::uint8_t* data = new std::uint8_t[sizeof(int)];
+	node.Initialize(20001);
+	node.Subscribe("test_topic");
+	std::uint8_t* data = new std::uint8_t[SEND_SIZE];
 
 	Rate r(1000);
-
 
 	for (int i = 0; i < 10000; ++i)
 	{
 		LOG(INFO) << "publish start:" << i;
 		memcpy(data, &i, sizeof(int));
-		client.Publish("test_topic", data, sizeof(int), false);
+		node.Publish("test_topic", data, SEND_SIZE, false);
 		r.sleep();
 		LOG(INFO) << "publish finished";
 	}

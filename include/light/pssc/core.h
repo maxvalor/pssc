@@ -8,11 +8,12 @@
 #ifndef LIGHT_PSSC_CORE_H_
 #define LIGHT_PSSC_CORE_H_
 
-#include "tcp/tcp_service.h"
 #include "id_generator.h"
 
 #include <unordered_map>
 #include <list>
+
+#include "../../pssc/transport/tcp/TCPServer.h"
 
 namespace light
 {

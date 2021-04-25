@@ -7,8 +7,8 @@
 //============================================================================
 
 #include <glog/logging.h>
-#include <light/tcp/tcp_service.h>
 #include <thread>
+#include "../include/light/tcp/TCPService.h"
 
 int main() {
 	light::TCPService service(

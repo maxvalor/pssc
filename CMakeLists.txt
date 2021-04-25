@@ -6,32 +6,36 @@ include_directories(
   include/light
 )
 
-add_executable(client
-  src/client.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_client.cpp
+add_executable(pssc_core
+  src/pssc/test_core.cpp
+  src/pssc/Core.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPServer.cpp
 )
-target_link_libraries(client
+target_link_libraries(pssc_core
   -lpthread
   glog
   -lboost_system
 )
 
-add_executable(test_publisher
-  src/test_publish.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_client.cpp
+add_executable(test_client
+  src/pssc/test_client.cpp
+  src/pssc/Node.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPClient.cpp
 )
-target_link_libraries(test_publisher
+target_link_libraries(test_client
   -lpthread
   glog
   -lboost_system
 )
+
 
 add_executable(test_subscriber
   src/test_subscribe.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_client.cpp
+  src/pssc/Node.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPClient.cpp
 )
 target_link_libraries(test_subscriber
   -lpthread
@@ -39,34 +43,13 @@ target_link_libraries(test_subscriber
   -lboost_system
 )
 
-add_executable(test_service
-  src/test_service.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_client.cpp
+add_executable(test_publish
+  src/test_publish.cpp
+  src/pssc/Node.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPClient.cpp
 )
-target_link_libraries(test_service
-  -lpthread
-  glog
-  -lboost_system
-)
-
-add_executable(test_call
-  src/test_call.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_client.cpp
-)
-target_link_libraries(test_call
-  -lpthread
-  glog
-  -lboost_system
-)
-
-add_executable(pssc_core
-  src/pssc/core.cpp
-  src/tcp/tcp_connection.cpp
-  src/tcp/tcp_service.cpp
-)
-target_link_libraries(pssc_core
+target_link_libraries(test_publish
   -lpthread
   glog
   -lboost_system
