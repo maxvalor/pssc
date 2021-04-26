@@ -18,12 +18,12 @@ int main(int argc, char*argv[]) {
 		memcpy(&i, data, sizeof(int));
 		LOG(INFO) << "data:" << i;
 		LOG(INFO) << "total size:" << size;
-		if (i > 10)
-        {
-		    auto success = node.UnSubscribe("test_topic");
-		    LOG(INFO) << "unsubscribe rlt value:" << success;
-		    LOG(INFO) << "unsubscribe: " << (success ? "true" : "false");
-        }
+//		if (i > 10)
+//        {
+//		    auto success = node.UnSubscribe("test_topic");
+//		    LOG(INFO) << "unsubscribe rlt value:" << success;
+//		    LOG(INFO) << "unsubscribe: " << (success ? "true" : "false");
+//        }
 	});
 	node.Initialize(20001);
 	auto success = node.Subscribe("test_topic");

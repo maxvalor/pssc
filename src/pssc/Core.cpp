@@ -46,6 +46,23 @@ void Core::OnDisconnected(std::shared_ptr<TCPConnection> conn)
 			DLOG(INFO) << "node with id " << node.first << " was disconnected.";
 			auto nodeId = node.first;
 			nodes.erase(nodeId);
+
+			// close service
+			pssc_write_guard guard(rwlckSrvs);
+			std::list<std::string> srv_names;
+			for(auto srv : srvs)
+			{
+			    if (srv.second == nodeId)
+			    {
+			        srv_names.push_back(srv.first);
+			    }
+			}
+
+            for(auto srv_name : srv_names)
+            {
+                srvs.erase(srv_name);
+            }
+
 			return;
 		}
 	}
@@ -286,21 +303,30 @@ void Core::CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPM
 			<< ", srv_name:" << req.srv_name;
 
 	pssc_read_guard guard(rwlckSrvs);
-	auto fd = srvs.find(req.srv_name);
-	if (fd == srvs.end())
-	{
-		ServiceResponseMessage resp;
-		resp.messageId = req.messageId;
-		resp.success = false;
-		conn->PendMessage(resp.toTCPMessage());
-		DLOG(INFO) << "NOT DONE.";
-	}
-	else
-	{
-		auto srv_conn =  nodes.at(fd->second);
-		srv_conn->PendMessage(msg);
-		DLOG(INFO) << "DONE.";
-	}
+    auto fd = srvs.find(req.srv_name);
+    if (fd == srvs.end())
+    {
+        ServiceResponseMessage resp;
+        resp.messageId = req.messageId;
+        resp.success = false;
+        conn->PendMessage(resp.toTCPMessage());
+        DLOG(INFO) << "NOT DONE.";
+    }
+    else
+    {
+        try {
+            auto srv_conn =  nodes.at(fd->second);
+            srv_conn->PendMessage(msg);
+            DLOG(INFO) << "DONE.";
+        } catch (...) {
+            ServiceResponseMessage resp;
+            resp.messageId = req.messageId;
+            resp.success = false;
+            conn->PendMessage(resp.toTCPMessage());
+
+            DLOG(INFO) << "NOT DONE: Closed.";
+        }
+    }
 }
 
 void Core::ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
