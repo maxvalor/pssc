@@ -29,7 +29,7 @@ public:
 	size_t sizeOfData;
 	pssc_bytes data;
 
-	ServiceResponseMessage() : data(nullptr) {} // @suppress("Class members should be properly initialized")
+	ServiceResponseMessage() : data(nullptr), sizeOfData(0u) {} // @suppress("Class members should be properly initialized")
 
 	ServiceResponseMessage(std::shared_ptr<TCPMessage> msg) : msg(msg)
 	{

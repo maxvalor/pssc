@@ -22,9 +22,16 @@ int main(int argc, char*argv[]) {
 		LOG(INFO) << "call service start.";
 		auto resp = node.RemoteCall("a", data, SIZE_A);
 		LOG(INFO) << "call service: " << (resp->success ? "true" : "false");
-		int data;
-		memcpy(&data, resp->data, resp->sizeOfData);
-		LOG(INFO) << "data: " << data;
+		if (resp->success)
+		{
+            int data;
+            memcpy(&data, resp->data, resp->sizeOfData);
+            LOG(INFO) << "data: " << data;
+		}
+		else
+		{
+		    break;
+		}
 	}
 
 	getchar();

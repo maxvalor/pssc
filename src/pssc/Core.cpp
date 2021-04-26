@@ -102,6 +102,12 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
 				break;
 			}
 
+            case Ins::CLOSE_SERVICE:
+            {
+                CloseService(conn, msg);
+                break;
+            }
+
 			default:
 			{
 				DLOG(ERROR) << "UNKOWN MESSAGE";
@@ -257,7 +263,7 @@ void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr
 		ack.success = false;
 
 		conn->PendMessage(ack.toTCPMessage());
-		LOG(INFO) << "NOT DONE.";
+		DLOG(INFO) << "NOT DONE.";
 	}
 	else
 	{
@@ -266,7 +272,7 @@ void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr
 
 		conn->PendMessage(ack.toTCPMessage());
 
-		LOG(INFO) << "DONE.";
+		DLOG(INFO) << "DONE.";
 	}
 }
 
@@ -284,13 +290,16 @@ void Core::CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPM
 	if (fd == srvs.end())
 	{
 		ServiceResponseMessage resp;
+		resp.messageId = req.messageId;
 		resp.success = false;
 		conn->PendMessage(resp.toTCPMessage());
+		DLOG(INFO) << "NOT DONE.";
 	}
 	else
 	{
 		auto srv_conn =  nodes.at(fd->second);
 		srv_conn->PendMessage(msg);
+		DLOG(INFO) << "DONE.";
 	}
 }
 
@@ -303,6 +312,33 @@ void Core::ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
 	auto srv_conn =  nodes.at(req.callerId);
 
 	srv_conn->PendMessage(msg);
+}
+
+void Core::CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
+{
+    CloseServiceMessage req(msg);
+    CloseSrvACKMessage resp;
+    resp.messageId = req.messageId;
+
+    DLOG(INFO) << "CLOSE SERVICE: advertiserId:" << req.advertiserId
+            << ", messageId:" << req.messageId
+            << ", srv_name:" << req.srv_name;
+
+    pssc_write_guard guard(rwlckSrvs);
+    auto fd = srvs.find(req.srv_name);
+    if (fd == srvs.end() || fd->second != req.advertiserId)
+    {
+        resp.success = false;
+        DLOG(INFO) << "NOT DONE.";
+    }
+    else
+    {
+        srvs.erase(fd);
+        resp.success = true;
+        DLOG(INFO) << "DONE.";
+    }
+
+    conn->PendMessage(resp.toTCPMessage());
 }
 
 int Core::Start()

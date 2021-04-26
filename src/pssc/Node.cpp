@@ -91,6 +91,12 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 			break;
 		}
 
+        case Ins::CLOSESRVACK:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
+
 		case Ins::SERVICE_CALL:
 		{
 			OnSrvCall(msg);
@@ -300,6 +306,22 @@ bool Node::AdvertiseService(std::string srv_name)
 	return resp.success;
 }
 
+bool Node::CloseService(std::string srv_name)
+{
+    CloseServiceMessage req;
+    req.messageId = messageIdGen.Next();
+    req.advertiserId = nodeId;
+    req.srv_name = srv_name;
+
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+    {
+        return false;
+    }
+
+    CloseSrvACKMessage resp(msg);
+    return resp.success;
+}
 
 std::shared_ptr<Node::ResponseData> Node::RemoteCall(std::string srv_name, std::uint8_t* data, size_t size)
 {

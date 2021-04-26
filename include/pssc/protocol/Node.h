@@ -112,9 +112,12 @@ public:
 	bool Initialize(int port);
 	void Publish(std::string topic, std::uint8_t* data, size_t size, bool feedback = false);
 	bool Subscribe(std::string topic);
-	bool AdvertiseService(std::string srv_name);
-	std::shared_ptr<Node::ResponseData> RemoteCall(std::string srv_name, std::uint8_t* data, size_t size);
 	bool UnSubscribe(std::string topic);
+	bool AdvertiseService(std::string srv_name);
+	bool CloseService(std::string srv_name);
+	std::shared_ptr<Node::ResponseData> RemoteCall(std::string srv_name, std::uint8_t* data, size_t size);
+
+
 
 
 	// on message received

@@ -16,7 +16,7 @@ class AdvSrvACKMessage : public PSSCMessage
 {
 public:
 	// | INS | ID | SUCCESS |
-	static const pssc_ins INS = Ins::SUBACK;
+	static const pssc_ins INS = Ins::ADVSRVACK;
 	static const pssc_size SIZE_OF_MESSAGE = SIZE_OF_PSSC_INS + SIZE_OF_PSSC_ID + SIZE_OF_BOOL;
 
 	bool success;
