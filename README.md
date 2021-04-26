@@ -1,8 +1,6 @@
 # pssc
 a data-oriented multi-process protocol.
 
-Under deveoping.
-
 # Protocol Detail
 
 ## Commands
@@ -11,9 +9,28 @@ REGISTER
 
 REGACK
 
-PUBLISH
-
 SUBSCRIBE
 
 SUBACK
+
+UNSUBSCRIBE
+
+UNSUBACK
+
+PUBLISH
+
+ADDVERTISE_SERVICE
+
+ADVSRVACK
+
+CLOSE_SERVICE
+
+CLOSESRVACK
+
+SERVICE_CALL
+
+SERVICE_RESPONSE
+
+    
+
 
