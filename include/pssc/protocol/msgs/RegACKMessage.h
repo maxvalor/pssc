@@ -41,7 +41,10 @@ public:
 		msg->AppendData(INS);
 		msg->AppendData(messageId);
 		msg->AppendData(success);
-		msg->AppendData(nodeId);
+		if (success)
+		{
+			msg->AppendData(nodeId);
+		}
 		return msg;
 	}
 };

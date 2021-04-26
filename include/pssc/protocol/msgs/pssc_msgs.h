@@ -15,6 +15,8 @@
 #include "SubACKMessage.h"
 #include "AdvertiseServiceMessage.h"
 #include "AdvSrvACKMessage.h"
+#include "ServiceCallMessage.h"
+#include "ServiceResponseMessage.h"
 
 
 #endif /* INCLUDE_PSSC_PROTOCOL_MSGS_PSSC_MSGS_H_ */

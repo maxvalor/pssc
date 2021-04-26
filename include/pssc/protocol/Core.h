@@ -52,10 +52,8 @@ private:
 	void Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 	void Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 	void AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-
-//	void AdvertiseService(std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPConnection> conn);
-//	void CallService(std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPConnection> conn);
-//	void ResponseService(std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPConnection> conn);
+	void CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+	void ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 };
 
 };

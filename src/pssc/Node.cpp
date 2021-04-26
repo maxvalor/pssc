@@ -8,8 +8,6 @@
 #include "pssc/protocol/Node.h"
 #include "pssc/protocol/types.h"
 
-#include "pssc/protocol/msgs/pssc_msgs.h"
-
 namespace pssc {
 
 bool Node::Initialize(int port)
@@ -45,17 +43,7 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 	{
 		case Ins::REGACK:
 		{
-			RegACKMessage ack(msg);
-			if (ack.success)
-			{
-				LOG(INFO) << "Success to register node with id " << ack.nodeId;
-				nodeId = ack.nodeId;
-				startNoti.notify_one();
-			}
-			else
-			{
-				LOG(WARNING) << "Failed to register node.";
-			}
+			OnRegACK(msg);
 			break;
 		}
 
@@ -67,38 +55,91 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 
 		case Ins::SUBACK:
 		{
-			pssc_id messageId;
-			msg->NextData(messageId);
-			msg->Reset();
-			msg->IgnoreBytes(SIZE_OF_PSSC_INS);
-
-			mtxAcks.lock();
-			acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
-			auto funcNoti = mapAckNoti.at(messageId);
-			mapAckNoti.erase(messageId);
-			mtxAcks.unlock();
-
-			funcNoti();
+			OnSubACK(msg);
 			break;
 		}
 
 		case Ins::ADVSRVACK:
 		{
-			pssc_id messageId;
-			msg->NextData(messageId);
-			msg->Reset();
-			msg->IgnoreBytes(SIZE_OF_PSSC_INS);
+			OnAdvSrvACK(msg);
+			break;
+		}
 
-			mtxAcks.lock();
-			acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
-			auto funcNoti = mapAckNoti.at(messageId);
-			mapAckNoti.erase(messageId);
-			mtxAcks.unlock();
+		case Ins::SERVICE_CALL:
+		{
+			OnSrvCall(msg);
+			break;
+		}
 
-			funcNoti();
+		case Ins::SERVICE_RESPONSE:
+		{
+			OnSrvResp(msg);
+			break;
+		}
+
+		default:
+		{
+			DLOG(ERROR) << "UNKOWN MESSAGE";
 			break;
 		}
 	}
+}
+
+void Node::OnGenerelResponse(std::shared_ptr<TCPMessage> msg)
+{
+	pssc_id messageId;
+	msg->NextData(messageId);
+	msg->Reset();
+	msg->IgnoreBytes(SIZE_OF_PSSC_INS);
+
+	mtxAcks.lock();
+	acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
+	auto funcNoti = mapAckNoti.at(messageId);
+	mapAckNoti.erase(messageId);
+	mtxAcks.unlock();
+
+	funcNoti();
+}
+
+void Node::OnRegACK(std::shared_ptr<TCPMessage> msg)
+{
+	RegACKMessage ack(msg);
+	if (ack.success)
+	{
+		LOG(INFO) << "Success to register node with id " << ack.nodeId;
+		nodeId = ack.nodeId;
+		startNoti.notify_one();
+	}
+	else
+	{
+		LOG(WARNING) << "Failed to register node.";
+	}
+}
+
+void Node::OnSubACK(std::shared_ptr<TCPMessage> msg)
+{
+	OnGenerelResponse(msg);
+}
+
+void Node::OnAdvSrvACK(std::shared_ptr<TCPMessage> msg)
+{
+	OnGenerelResponse(msg);
+}
+
+void Node::OnSrvCall(std::shared_ptr<TCPMessage> msg)
+{
+	LOG(INFO) << "Received Service Call.";
+	ServiceCallMessage req(msg);
+	auto op = std::make_shared<ResponseOperator>();
+	op->messageId = req.messageId;
+	op->callerId = req.callerId;
+	op->conn = conn;
+	srvCallback(req.srv_name, req.data, req.sizeOfData, op);
+}
+
+void Node::OnSrvResp(std::shared_ptr<TCPMessage> msg)
+{
+	OnGenerelResponse(msg);
 }
 
 void Node::OnPublish(std::shared_ptr<TCPMessage> msg)
@@ -183,6 +224,38 @@ bool Node::AdvertiseService(std::string srv_name)
 
 	AdvSrvACKMessage resp(msg);
 	return resp.success;
+}
+
+
+std::shared_ptr<Node::ResponseData> Node::RemoteCall(std::string srv_name, std::uint8_t* data, size_t size)
+{
+	ServiceCallMessage req;
+	req.messageId = messageIdGen.Next();
+	req.callerId = nodeId;
+	req.srv_name = srv_name;
+	req.sizeOfData = size;
+	req.data = data;
+
+	std::shared_ptr<TCPMessage> msg;
+	if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+	{
+		return std::make_shared<Node::ResponseData>(false);
+	}
+
+	auto resp = std::make_shared<ServiceResponseMessage>(msg);
+	return std::make_shared<Node::ResponseData>(resp);
+}
+
+void Node::ResponseOperator::SendResponse(bool success,
+		std::uint8_t* data, size_t size)
+{
+	ServiceResponseMessage resp;
+	resp.success = success;
+	resp.messageId = messageId;
+	resp.callerId = callerId;
+	resp.sizeOfData = size;
+	resp.data = data;
+	conn->PendMessage(resp.toTCPMessage());
 }
 
 }

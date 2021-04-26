@@ -11,13 +11,15 @@
 
 int main(int argc, char*argv[]) {
 	pssc::Node node;
-//	node.SetServiceCallback([&](std::string srv, std::uint64_t mid, std::uint64_t client_id, std::uint8_t* data, size_t size)
-//	{
-//		LOG(INFO) << "srv:" << srv;
-//		node.SendCallResult(client_id, mid, true, nullptr, 0);
-//	});
-	node.Initialize(std::string(argv[1]), 20001);
-	LOG(INFO) << "advertise service: " << (client.AdvertiseService("a") ? "true" : "false");
+	node.SetServiceCallback([](std::string srv_name, std::uint8_t* data, size_t size, std::shared_ptr<pssc::Node::ResponseOperator> op)
+	{
+		static int i = 0;
+		LOG(INFO) << "srv_name:" << srv_name;
+		i++;
+		op->SendResponse(true, (std::uint8_t*)&i, sizeof(i));
+	});
+	node.Initialize(20001);
+	LOG(INFO) << "advertise service: " << (node.AdvertiseService("a") ? "true" : "false");
 
 	getchar();
 

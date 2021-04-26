@@ -34,102 +34,6 @@ void Core::OnConnected(std::shared_ptr<TCPConnection> conn)
 	);
 
 	conn->Start();
-
-//				std::thread([this, conn]()
-//				{
-//					while (conn->IsRunning())
-//					{
-//						std::shared_ptr<TCPMessage> req;
-//
-//						if (!conn->R(req))
-//						{
-//							break;
-//						}
-//
-//						std::uint8_t ins;
-//						req->NextData(ins);
-//
-//						switch (ins)
-//						{
-//							case Ins::REGISTER:
-//							{
-//								Register(req, conn);
-//								break;
-//							}
-//							/*case Ins::UNREGISTER:
-//							{
-//								std::string name((char*)req->body());
-//								DLOG(INFO) << "UNREGISTER: " << name;
-//
-//								auto resp = TCPMessage::Generate(1);
-//								resp->header.id = req->header.id;
-//								resp->header.ins = Ins::UNREGISTER;
-//								resp->header.type = TCPMessage::RESPONSE;
-//								resp->header.bodyLength = 1;
-//
-//								if (nodes.find(name) == nodes.end())
-//								{
-//									nodes.erase(name);
-//									DLOG(INFO) << "Unregister node " << name;
-//									resp->body()[0] = 1;
-//								}
-//								else
-//								{
-//									DLOG(INFO) << "Not found node " << name;
-//									resp->body()[0] = 0;
-//								}
-//
-//								conn->SendResponse(resp);
-//
-//								break;
-//							}
-//
-//							case Ins::SUBSCRIBE:
-//							{
-//								Subscribe(req, conn);
-//								break;
-//							}
-//
-//							case Ins::PUBLISH:
-//							{
-//								Publish(req, conn);
-//								break;
-//							}
-//
-//							case Ins::ADDVERTISE_SERVICE:
-//							{
-//								AdvertiseService(req, conn);
-//								break;
-//							}
-//
-//							case Ins::SERVICE_CALL:
-//							{
-//								CallService(req, conn);
-//								break;
-//							}
-//
-//							case Ins::SERVICE_RESPONSE:
-//							{
-//								ResponseService(req, conn);
-//								break;
-//							}
-//
-//							default:
-//							{
-//								DLOG(WARNING) << "UNKOWN";
-//
-//								auto resp = TCPMessage::Generate(1);
-//								resp->header.id = req->header.id;
-//								resp->header.ins = Ins::UNKOWN;
-//								resp->header.type = TCPMessage::RESPONSE;
-//								resp->body()[0] = false;
-//								conn->SendResponse(resp);
-//								break;
-//							}
-//							*/
-//						}
-//					}
-//				}).detach();
 }
 
 void Core::OnDisconnected(std::shared_ptr<TCPConnection> conn)
@@ -171,6 +75,30 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
 			case Ins::SUBSCRIBE:
 			{
 				Subscribe(conn, msg);
+				break;
+			}
+
+			case Ins::ADDVERTISE_SERVICE:
+			{
+				AdvertiseService(conn, msg);
+				break;
+			}
+
+			case Ins::SERVICE_CALL:
+			{
+				CallService(conn, msg);
+				break;
+			}
+
+			case Ins::SERVICE_RESPONSE:
+			{
+				ResponseService(conn, msg);
+				break;
+			}
+
+			default:
+			{
+				DLOG(ERROR) << "UNKOWN MESSAGE";
 				break;
 			}
 		}
@@ -297,74 +225,40 @@ void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr
 	}
 }
 
-/*
-void Core::CallService(std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPConnection> conn)
+
+void Core::CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	// | INS* | ID | CLIENT_ID | SIZE_OF_SRV_NAME | SRV_NAME | SIZE_OF_DATA | DATA |
-	std::uint64_t mid;
-	std::string srv_name;
-	std::uint64_t clientId;
+	ServiceCallMessage req(msg);
 
-	req->NextData(mid);
-	req->NextData(clientId);
-	req->NextData(srv_name);
+	DLOG(INFO) << "CALL SERVICE: callerId:" << req.callerId
+			<< ", messageId:" << req.messageId
+			<< ", srv_name:" << req.srv_name;
 
-	DLOG(INFO) << "CALL SERVICE: clientId:" << clientId
-			<< ", messageId:" << mid
-			<< ", srv_name:" << srv_name;
-	mtxSrvs.lock();
-	auto fd = srvs.find(srv_name);
+	pssc_read_guard guard(rwlckSrvs);
+	auto fd = srvs.find(req.srv_name);
 	if (fd == srvs.end())
 	{
-		mtxSrvs.unlock();
-		// | INS | ID | SUCCESS |
-		auto resp = TCPMessage::Generate(
-				INS_SIZE
-				+ ID_SIZE
-				+ sizeof(bool));
-
-		resp->AppendData(std::uint8_t(Ins::SERVICE_RESPONSE));
-		resp->AppendData(mid);
-		resp->AppendData(false);
-
-		conn->SendResponse(resp);
-		return;
+		ServiceResponseMessage resp;
+		resp.success = false;
+		conn->PendMessage(resp.toTCPMessage());
 	}
-	mtxSrvs.unlock();
-
-	auto srv_conn =  nodes.at(nodeNames.at(fd->second));
-	srv_conn->SendRequest(req);
-
-//	// for test
-//	// | INS | ID | SUCCESS |
-//	auto resp = TCPMessage::Generate(
-//			INS_SIZE
-//			+ ID_SIZE
-//			+ sizeof(bool));
-//
-//	resp->AppendData(std::uint8_t(Ins::SERVICE_RESPONSE));
-//	resp->AppendData(mid);
-//	resp->AppendData(true);
-//
-//	conn->SendResponse(resp);
+	else
+	{
+		auto srv_conn =  nodes.at(fd->second);
+		srv_conn->PendMessage(msg);
+	}
 }
 
-void Core::ResponseService(std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPConnection> conn)
+void Core::ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	// | INS* | ID | CLIENT_ID | SUCCESS | SIZE_OF_DATA | DATA |
-	std::uint64_t mid;
-	std::uint64_t clientId;
+	ServiceResponseMessage req(msg);
 
-	req->NextData(mid);
-	req->NextData(clientId);
+	DLOG(INFO) << "RESPONSE SERVICE: clientId:" << req.callerId
+				<< ", messageId:" << req.messageId;
+	auto srv_conn =  nodes.at(req.callerId);
 
-	DLOG(INFO) << "RESPONSE SERVICE: clientId:" << clientId
-			<< ", messageId:" << mid;
-	auto srv_conn =  nodes.at(nodeNames.at(clientId));
-
-	srv_conn->SendResponse(req);
+	srv_conn->PendMessage(msg);
 }
-*/
 
 int Core::Start()
 {

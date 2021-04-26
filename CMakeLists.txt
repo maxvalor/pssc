@@ -54,3 +54,27 @@ target_link_libraries(test_publish
   glog
   -lboost_system
 )
+
+add_executable(test_service
+  src/test_service.cpp
+  src/pssc/Node.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPClient.cpp
+)
+target_link_libraries(test_service
+  -lpthread
+  glog
+  -lboost_system
+)
+
+add_executable(test_call
+  src/test_call.cpp
+  src/pssc/Node.cpp
+  src/tcp/TCPConnection.cpp
+  src/tcp/TCPClient.cpp
+)
+target_link_libraries(test_call
+  -lpthread
+  glog
+  -lboost_system
+)
