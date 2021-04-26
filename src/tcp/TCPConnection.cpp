@@ -29,6 +29,8 @@ void TCPConnection::Start()
 	sendThread = std::thread(
 		std::bind(&TCPConnection::Run, this)
 	);
+
+	sendThread.detach();
 }
 
 void TCPConnection::Stop()
@@ -48,8 +50,6 @@ void TCPConnection::Stop()
 //	{
 //		sendThread.join();
 //	}
-
-	sendThread.detach();
 }
 
 void TCPConnection::ReadHeader()

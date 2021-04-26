@@ -102,7 +102,7 @@ int main(int argc, char*argv[]) {
 	node.Subscribe("test_topic");
 	std::uint8_t* data = new std::uint8_t[SEND_SIZE];
 
-	Rate r(5);
+	Rate r(1000);
 
 	for (int i = 0; i < 10000; ++i)
 	{
