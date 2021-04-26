@@ -86,7 +86,7 @@ public:
 
 };
 
-#define SEND_SIZE 1920 * 1080 * 3
+#define SEND_SIZE 1920 * 1080 * 3 / 20  // 1080P png file size
 
 int main(int argc, char*argv[]) {
 	pssc::Node node;
