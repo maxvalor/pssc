@@ -8,6 +8,8 @@
 #ifndef PSSC_INSTRUCTION_H_
 #define PSSC_INSTRUCTION_H_
 
+namespace pssc {
+
 enum Instruction
 {
 	REGISTER = 0x00,
@@ -25,6 +27,8 @@ enum Instruction
 };
 
 using Ins = Instruction;
+
+}
 
 
 #endif /* PSSC_INSTRUCTION_H_ */

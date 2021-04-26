@@ -17,7 +17,7 @@ int main(int argc, char*argv[]) {
 	std::uint8_t* data, *resp_data;
 	data = new std::uint8_t[SIZE_A];
 	size_t resp_size;
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 10000; ++i)
 	{
 		LOG(INFO) << "call service start.";
 		auto resp = node.RemoteCall("a", data, SIZE_A);
