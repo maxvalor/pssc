@@ -86,7 +86,7 @@ public:
 
 };
 
-#define SEND_SIZE 1920 * 1080 * 3 / 20  // 1080P png file size
+#define SEND_SIZE 1920 * 1080 * 4 / 20  // 1080P png file size
 
 int main(int argc, char*argv[]) {
 	pssc::Node node;
@@ -104,13 +104,17 @@ int main(int argc, char*argv[]) {
 
 	Rate r(1000);
 
+	struct timeval tv_start,tv_end;
 	for (int i = 0; i < 10000; ++i)
 	{
 		LOG(INFO) << "publish start:" << i;
-		memcpy(data, &i, sizeof(int));
-		node.Publish("test_topic", data, SEND_SIZE, true);
-		r.sleep();
+//		memcpy(data, &i, sizeof(int));
+		gettimeofday(&tv_start, NULL);
+		memcpy(data, &tv_start, sizeof(tv_start));
+		node.Publish("test_topic", data, SEND_SIZE, false);
 		LOG(INFO) << "publish finished";
+		r.sleep();
+
 	}
 
 	getchar();

@@ -14,9 +14,13 @@ int main(int argc, char*argv[]) {
 	node.SetTopicCallback([&](std::string topic, std::uint8_t* data, size_t size)
 	{
 		LOG(INFO) << "topic:" << topic;
-		int i;
-		memcpy(&i, data, sizeof(int));
-		LOG(INFO) << "data:" << i;
+//		int i;
+//		memcpy(&i, data, sizeof(int));
+//		LOG(INFO) << "data:" << i;
+		struct timeval tv_start,tv_end;
+		gettimeofday(&tv_end, NULL);
+		memcpy(&tv_start, data, sizeof(tv_start));
+		printf("delay     : %lf ms\n", ((tv_end.tv_sec - tv_start.tv_sec) * 1000 + (tv_end.tv_usec - tv_start.tv_usec) / 1000.0));
 		LOG(INFO) << "total size:" << size;
 //		if (i > 10)
 //        {
