@@ -12,6 +12,18 @@ namespace pssc {
 
 bool Node::Initialize(int port)
 {
+    running = true;
+
+    execPub = std::thread(
+        std::bind(&Node::ExecPublish, this)
+    );
+    execPub.detach();
+
+    execCall = std::thread(
+        std::bind(&Node::ExecCall, this)
+    );
+    execCall.detach();
+
 	client = std::make_shared<TCPClient>(
 		port,
 		std::bind(&Node::OnConntected, this, std::placeholders::_1),
@@ -35,6 +47,14 @@ void Node::OnConntected(std::shared_ptr<TCPConnection> conn)
 	conn->PendMessage(req.toTCPMessage());
 }
 
+void Node::OnMessageReceived(std::shared_ptr<TCPMessage> msg)
+{
+    mtxMsg.lock();
+    msgList.push_back(msg);
+    mtxMsg.unlock();
+    cvMsg.notify_one();
+}
+
 void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 {
 	pssc_ins ins;
@@ -55,13 +75,19 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 
 		case Ins::SUBACK:
 		{
-			OnSubACK(msg);
+		    OnGenerelResponse(msg);
 			break;
 		}
 
+        case Ins::UNSUBACK:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
+
 		case Ins::ADVSRVACK:
 		{
-			OnAdvSrvACK(msg);
+		    OnGenerelResponse(msg);
 			break;
 		}
 
@@ -73,7 +99,7 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 
 		case Ins::SERVICE_RESPONSE:
 		{
-			OnSrvResp(msg);
+		    OnGenerelResponse(msg);
 			break;
 		}
 
@@ -85,8 +111,49 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 	}
 }
 
+void Node::ExecPublish()
+{
+    while (running)
+    {
+        std::unique_lock<std::mutex> lck(mtxMsg);
+        if (msgList.empty())
+        {
+            cvMsg.wait(lck);
+        }
+
+        auto msg = *msgList.begin();
+        msgList.pop_front();
+
+        PublishMessage req(msg);
+        topicCallback(req.topic, req.data, req.sizeOfData);
+    }
+}
+
+void Node::ExecCall()
+{
+    while (running)
+    {
+        std::unique_lock<std::mutex> lck(mtxCall);
+        if (callList.empty())
+        {
+            cvCall.wait(lck);
+        }
+
+        auto msg = *callList.begin();
+        callList.pop_front();
+
+        ServiceCallMessage req(msg);
+        auto op = std::make_shared<ResponseOperator>();
+        op->messageId = req.messageId;
+        op->callerId = req.callerId;
+        op->conn = conn;
+        srvCallback(req.srv_name, req.data, req.sizeOfData, op);
+    }
+}
+
 void Node::OnGenerelResponse(std::shared_ptr<TCPMessage> msg)
 {
+    LOG(INFO) << "Received Response.";
 	pssc_id messageId;
 	msg->NextData(messageId);
 	msg->Reset();
@@ -116,37 +183,24 @@ void Node::OnRegACK(std::shared_ptr<TCPMessage> msg)
 	}
 }
 
-void Node::OnSubACK(std::shared_ptr<TCPMessage> msg)
-{
-	OnGenerelResponse(msg);
-}
-
-void Node::OnAdvSrvACK(std::shared_ptr<TCPMessage> msg)
-{
-	OnGenerelResponse(msg);
-}
-
 void Node::OnSrvCall(std::shared_ptr<TCPMessage> msg)
 {
-	LOG(INFO) << "Received Service Call.";
-	ServiceCallMessage req(msg);
-	auto op = std::make_shared<ResponseOperator>();
-	op->messageId = req.messageId;
-	op->callerId = req.callerId;
-	op->conn = conn;
-	srvCallback(req.srv_name, req.data, req.sizeOfData, op);
-}
+    mtxCall.lock();
+    callList.push_back(msg);
+    mtxCall.unlock();
+    cvCall.notify_one();
 
-void Node::OnSrvResp(std::shared_ptr<TCPMessage> msg)
-{
-	OnGenerelResponse(msg);
+	LOG(INFO) << "Received Service Call.";
 }
 
 void Node::OnPublish(std::shared_ptr<TCPMessage> msg)
 {
-	LOG(INFO) << "Received Publish.";
-	PublishMessage req(msg);
-	topicCallback(req.topic, req.data, req.sizeOfData);
+    mtxMsg.lock();
+    msgList.push_back(msg);
+    mtxMsg.unlock();
+    cvMsg.notify_one();
+
+    LOG(INFO) << "Received Publish.";
 }
 
 void Node::OnDisconntected(std::shared_ptr<TCPConnection> conn)
@@ -168,11 +222,12 @@ bool Node::SendRequestAndWaitForResponse(pssc_id messageId, std::shared_ptr<TCPM
 	mtxAcks.unlock();
 	conn->PendMessage(req);
 
-	auto rlt = noti->wait_for(std::chrono::milliseconds(3000));
-	if (rlt == std::cv_status::timeout)
-	{
-		return false;
-	}
+//	auto rlt = noti->wait_for(std::chrono::milliseconds(3000));
+//	if (rlt == std::cv_status::timeout)
+//	{
+//		return false;
+//	}
+	noti->wait();
 	std::lock_guard<std::mutex> lck(mtxAcks);
 	resp = acks.at(messageId);
 	return true;
@@ -207,6 +262,25 @@ bool Node::Subscribe(std::string topic)
 
 	SubACKMessage resp(msg);
 	return resp.success;
+}
+
+bool Node::UnSubscribe(std::string topic)
+{
+    UnSubscribeMessage req;
+    req.messageId = messageIdGen.Next();
+    req.subscriberId = nodeId;
+    req.topic = topic;
+
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+    {
+        return false;
+    }
+
+    UnSubACKMessage resp(msg);
+    return resp.success;
+//    conn->PendMessage(req.toTCPMessage());
+    return true;
 }
 
 bool Node::AdvertiseService(std::string srv_name)

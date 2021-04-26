@@ -65,15 +65,16 @@ private:
 	IDGenerator<std::uint64_t> messageIdGen;
 	bool running;
 	std::unordered_map<pssc_id, std::function<void()>> mapAckNoti;
+	std::thread execPub, execCall;
 
 	util::Notifier startNoti;
 
-	std::mutex mtxMsg;
-	std::condition_variable cvMsg;
-	std::mutex mtxCall;
-	std::condition_variable cvCall;
-	std::list<std::shared_ptr<TCPMessage>> msgList;
-	std::list<std::shared_ptr<TCPMessage>> callList;
+    std::mutex mtxMsg;
+    std::condition_variable cvMsg;
+    std::mutex mtxCall;
+    std::condition_variable cvCall;
+    std::list<std::shared_ptr<TCPMessage>> msgList;
+    std::list<std::shared_ptr<TCPMessage>> callList;
 
 	std::mutex mtxAcks;
 	std::unordered_map<std::uint64_t, std::shared_ptr<TCPMessage>> acks;
@@ -83,23 +84,22 @@ private:
 	std::function<void(std::string, std::uint8_t*, size_t, std::shared_ptr<ResponseOperator>)> srvCallback;
 
 private:
-
+	void ExecPublish();
+	void ExecCall();
 	bool SendRequestAndWaitForResponse(pssc_id messageId, std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPMessage>& resp);
 
 	void OnConntected(std::shared_ptr<TCPConnection> conn);
 	void OnDisconntected(std::shared_ptr<TCPConnection> conn);
+
+	void OnMessageReceived(std::shared_ptr<TCPMessage> msg);
 	void DispatchMessage(std::shared_ptr<TCPMessage> msg);
 
 
 	void OnGenerelResponse(std::shared_ptr<TCPMessage> msg);
 	void OnRegACK(std::shared_ptr<TCPMessage> msg);
 
-	void OnSubACK(std::shared_ptr<TCPMessage> msg);
-	void OnAdvSrvACK(std::shared_ptr<TCPMessage> msg);
-
 	void OnPublish(std::shared_ptr<TCPMessage> msg);
 	void OnSrvCall(std::shared_ptr<TCPMessage> msg);
-	void OnSrvResp(std::shared_ptr<TCPMessage> msg);
 
 public:
 
@@ -114,6 +114,7 @@ public:
 	bool Subscribe(std::string topic);
 	bool AdvertiseService(std::string srv_name);
 	std::shared_ptr<Node::ResponseData> RemoteCall(std::string srv_name, std::uint8_t* data, size_t size);
+	bool UnSubscribe(std::string topic);
 
 
 	// on message received

@@ -11,13 +11,19 @@
 
 int main(int argc, char*argv[]) {
 	pssc::Node node;
-	node.SetTopicCallback([](std::string topic, std::uint8_t* data, size_t size)
+	node.SetTopicCallback([&](std::string topic, std::uint8_t* data, size_t size)
 	{
 		LOG(INFO) << "topic:" << topic;
 		int i;
 		memcpy(&i, data, sizeof(int));
 		LOG(INFO) << "data:" << i;
 		LOG(INFO) << "total size:" << size;
+		if (i > 10)
+        {
+		    auto success = node.UnSubscribe("test_topic");
+		    LOG(INFO) << "unsubscribe rlt value:" << success;
+		    LOG(INFO) << "unsubscribe: " << (success ? "true" : "false");
+        }
 	});
 	node.Initialize(20001);
 	auto success = node.Subscribe("test_topic");

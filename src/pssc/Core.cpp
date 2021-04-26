@@ -78,6 +78,12 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
 				break;
 			}
 
+            case Ins::UNSUBSCRIBE:
+            {
+                UnSubscribe(conn, msg);
+                break;
+            }
+
 			case Ins::ADDVERTISE_SERVICE:
 			{
 				AdvertiseService(conn, msg);
@@ -196,6 +202,45 @@ void Core::Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMes
 	DLOG(INFO) << "SUBSCRIBE response: " << req.subscriberId << "," << resp.success;
 }
 
+void Core::UnSubscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
+{
+    UnSubscribeMessage req(msg);
+    UnSubACKMessage resp;
+
+    DLOG(INFO) << "UNSUBSCRIBE: " << req.subscriberId << "," << req.topic;
+
+    pssc_write_guard guard(rwlckTopics);
+    if (topics.find(req.topic) == topics.end())
+    {
+        resp.success = true;
+    }
+    else
+    {
+        try {
+            auto& subscribers = topics.at(req.topic);
+//            auto subscriber = std::find(subscribers.begin(), subscribers.end(), req.subscriberId);
+//            if (subscriber != subscribers.end())
+//            {
+//                subscribers.erase(subscriber);
+//                DLOG(INFO) << "UNSUBSCRIBE: OK, count of subscriber:" << subscribers.size();
+//            }
+
+            subscribers.remove(req.subscriberId);
+            DLOG(INFO) << "UNSUBSCRIBE: OK, count of subscriber:" << subscribers.size();
+
+            resp.success = true;
+        }
+        catch (...)
+        {
+            DLOG(ERROR) << "UNSUBSCRIBE: ???";
+            resp.success = false;
+        }
+    }
+
+    resp.messageId = req.messageId;
+    conn->PendMessage(resp.toTCPMessage());
+    DLOG(INFO) << "UNSUBSCRIBE response: " << req.subscriberId << "," << resp.success;
+}
 
 
 void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)

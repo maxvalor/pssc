@@ -102,13 +102,13 @@ int main(int argc, char*argv[]) {
 	node.Subscribe("test_topic");
 	std::uint8_t* data = new std::uint8_t[SEND_SIZE];
 
-	Rate r(1000);
+	Rate r(5);
 
 	for (int i = 0; i < 10000; ++i)
 	{
 		LOG(INFO) << "publish start:" << i;
 		memcpy(data, &i, sizeof(int));
-		node.Publish("test_topic", data, SEND_SIZE, false);
+		node.Publish("test_topic", data, SEND_SIZE, true);
 		r.sleep();
 		LOG(INFO) << "publish finished";
 	}
