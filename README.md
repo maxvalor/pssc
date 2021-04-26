@@ -1,5 +1,5 @@
-# pssc
-a data-oriented multi-process protocol.
+# PSSC
+The PSSC (Publish/Subscribe and Service/Call protocol) a data-oriented multi-process protocol. It is designed for small robot development. 
 
 # Protocol Detail
 
