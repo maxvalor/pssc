@@ -15,7 +15,6 @@
 #include <list>
 
 #include "pssc/transport/tcp/TCPServer.h"
-#include "pssc/util/Locker.h"
 #include "types.h"
 #include "pssc/protocol/msgs/pssc_msgs.h"
 
@@ -34,13 +33,13 @@ private:
 
 	IDGenerator<std::uint64_t> nodeIdGen;
 
-	util::read_write_lock rwlckNodes;
+	pssc_rw_mutex rwlckNodes;
 	std::unordered_map<pssc_id, std::shared_ptr<TCPConnection>> nodes;
 
-	util::read_write_lock rwlckTopics;
+	pssc_rw_mutex rwlckTopics;
 	std::unordered_map<std::string, std::list<pssc_id>> topics;
 
-	util::read_write_lock rwlckSrvs;
+	pssc_rw_mutex rwlckSrvs;
 	std::unordered_map<std::string, pssc_id> srvs;
 
 	void OnConnected(std::shared_ptr<TCPConnection> conn);

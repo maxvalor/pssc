@@ -10,7 +10,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include "pssc/util/Locker.h"
+#include <shared_mutex>
 
 #define BUILD_DEPENDS_ON_PLATFORM
 
@@ -39,8 +39,9 @@ using pssc_byte = std::uint8_t;
 using pssc_bytes = std::uint8_t*;
 
 using pssc_lock_guard = std::lock_guard<std::mutex>;
-using pssc_read_guard = util::unique_read_guard<util::read_write_lock>;
-using pssc_write_guard = util::unique_write_guard<util::read_write_lock>;
+using pssc_rw_mutex = std::shared_timed_mutex;
+using pssc_read_guard = std::shared_lock<std::shared_timed_mutex>;
+using pssc_write_guard = std::unique_lock<std::shared_timed_mutex>;
 
 }
 

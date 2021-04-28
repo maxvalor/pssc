@@ -10,8 +10,8 @@
 #include <glog/logging.h>
 #include <thread>
 #include <string>
+#include <future>
 #include "pssc/protocol/msgs/pssc_msgs.h"
-#include "pssc/util/Locker.h"
 
 namespace pssc
 {
@@ -149,7 +149,7 @@ void Core::Register(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMess
 	}
 	else
 	{
-		nodes.insert(std::pair<pssc_id, std::shared_ptr<TCPConnection>>(ack.nodeId, conn));
+		nodes.insert(std::make_pair(ack.nodeId, conn));
 		ack.success = true;
 	}
 
@@ -165,25 +165,63 @@ void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessa
 
 	pssc_read_guard guardTopics(rwlckTopics);
 	auto&& subscribers = topics.find(req.topic);
-	if (subscribers != topics.end())
-	{
-		for (auto& subscriberId : subscribers->second)
-		{
-			if (subscriberId == req.publisherId && !req.feedback)
-			{
-				continue;
-			}
-			DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
-			pssc_read_guard guardNodes(rwlckNodes);
-			try {
-				auto& subConn = nodes.at(subscriberId);
-				DLOG(WARNING) << "publish data size: " << req.sizeOfData;
-				subConn->PendMessage(msg);
-			} catch (...) {
-				// disconnected subscriber, do nothing
-			}
-		}
-	}
+	DLOG(WARNING) << "publish data size: " << req.sizeOfData;
+
+    if (subscribers->second.size() > 1)
+    {
+        std::vector<std::future<bool>> fs;
+        if (subscribers != topics.end())
+        {
+            for (auto& subscriberId : subscribers->second)
+            {
+                if (subscriberId == req.publisherId && !req.feedback)
+                {
+                    continue;
+                }
+                DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
+                pssc_read_guard guardNodes(rwlckNodes);
+                try {
+                    auto& subConn = nodes.at(subscriberId);
+
+                    auto f = std::async([subConn, msg](){
+                        subConn->PendMessage(msg);
+                        return true;
+                    });
+                    fs.emplace_back(std::move(f));
+                } catch (...) {
+                    // disconnected subscriber, do nothing
+                }
+            }
+
+            for (auto& f :  fs)
+            {
+                f.get();
+            }
+        }
+    }
+    else
+    {
+        if (subscribers != topics.end())
+        {
+            for (auto& subscriberId : subscribers->second)
+            {
+                if (subscriberId == req.publisherId && !req.feedback)
+                {
+                    continue;
+                }
+                DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
+                pssc_read_guard guardNodes(rwlckNodes);
+                try {
+                    auto& subConn = nodes.at(subscriberId);
+
+                    subConn->PendMessage(msg);
+
+                } catch (...) {
+                    // disconnected subscriber, do nothing
+                }
+            }
+        }
+    }
 }
 
 void Core::Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
@@ -198,7 +236,7 @@ void Core::Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMes
 	{
 		std::list<pssc_id> subscribers;
 		subscribers.emplace_back(req.subscriberId);
-		topics.insert(std::pair<std::string, std::list<pssc_id>>(req.topic, subscribers));
+		topics.insert(std::make_pair(req.topic, subscribers));
 
 		resp.success = true;
 	}
@@ -284,7 +322,7 @@ void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr
 	}
 	else
 	{
-		srvs.insert(std::pair<std::string, pssc_id>(req.srv_name, req.advertiserId));
+		srvs.insert(std::make_pair(req.srv_name, req.advertiserId));
 		ack.success = true;
 
 		conn->PendMessage(ack.toTCPMessage());

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(light)
 
+add_definitions(-std=c++17)
+
 include_directories(
   include
   include/light

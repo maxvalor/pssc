@@ -166,7 +166,8 @@ void Node::OnGenerelResponse(std::shared_ptr<TCPMessage> msg)
 	msg->IgnoreBytes(SIZE_OF_PSSC_INS);
 
 	mtxAcks.lock();
-	acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
+//	acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
+	acks.insert(std::make_pair(messageId, msg));
 	auto funcNoti = mapAckNoti.at(messageId);
 	mapAckNoti.erase(messageId);
 	mtxAcks.unlock();
@@ -224,7 +225,8 @@ bool Node::SendRequestAndWaitForResponse(pssc_id messageId, std::shared_ptr<TCPM
 	};
 
 	mtxAcks.lock();
-	mapAckNoti.insert(std::pair<pssc_id, std::function<void()>>(messageId, f));
+//	mapAckNoti.insert(std::pair<pssc_id, std::function<void()>>(messageId, f));
+	mapAckNoti.insert(std::make_pair(messageId, f));
 	mtxAcks.unlock();
 	conn->PendMessage(req);
 
