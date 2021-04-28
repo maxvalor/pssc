@@ -190,6 +190,7 @@ void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessa
                     fs.emplace_back(std::move(f));
                 } catch (...) {
                     // disconnected subscriber, do nothing
+                    std::this_thread::yield();
                 }
             }
 
@@ -218,6 +219,7 @@ void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessa
 
                 } catch (...) {
                     // disconnected subscriber, do nothing
+                    std::this_thread::yield();
                 }
             }
         }
