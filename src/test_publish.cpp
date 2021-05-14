@@ -89,35 +89,35 @@ public:
 #define SEND_SIZE 1920 * 1080 * 4 // / 20  // 1080P png file size
 
 int main(int argc, char*argv[]) {
-	pssc::Node node;
-	node.SetTopicCallback([](std::string topic, std::uint8_t* data, size_t size)
-	{
-		LOG(INFO) << "topic:" << topic;
-		int i;
-		memcpy(&i, data, sizeof(i));
-		LOG(INFO) << "data:" << i;
-		LOG(INFO) << "total size:" << size;
-	});
-	node.Initialize(20001);
-	node.Subscribe("test_topic");
-	std::uint8_t* data = new std::uint8_t[SEND_SIZE];
+    pssc::Node node;
+    node.SetTopicCallback([](std::string topic, std::uint8_t* data, size_t size)
+    {
+        LOG(INFO) << "topic:" << topic;
+        int i;
+        memcpy(&i, data, sizeof(i));
+        LOG(INFO) << "data:" << i;
+        LOG(INFO) << "total size:" << size;
+    });
+    node.Initialize(20001);
+    node.Subscribe("test_topic");
+    std::uint8_t* data = new std::uint8_t[SEND_SIZE];
 
-	Rate r(1000);
+    Rate r(1000);
 
-	struct timeval tv_start,tv_end;
-	for (int i = 0; i < 10000; ++i)
-	{
-		LOG(INFO) << "publish start:" << i;
-//		memcpy(data, &i, sizeof(int));
-		gettimeofday(&tv_start, NULL);
-		memcpy(data, &tv_start, sizeof(tv_start));
-		node.Publish("test_topic", data, SEND_SIZE, false);
-		LOG(INFO) << "publish finished";
-		r.sleep();
+    struct timeval tv_start,tv_end;
+    for (int i = 0; i < 10000; ++i)
+    {
+        LOG(INFO) << "publish start:" << i;
+//        memcpy(data, &i, sizeof(int));
+        gettimeofday(&tv_start, NULL);
+        memcpy(data, &tv_start, sizeof(tv_start));
+        node.Publish("test_topic", data, SEND_SIZE, false);
+        LOG(INFO) << "publish finished";
+        r.sleep();
 
-	}
+    }
 
-	getchar();
+    getchar();
 
-	return 0;
+    return 0;
 }

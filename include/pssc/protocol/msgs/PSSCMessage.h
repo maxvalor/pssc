@@ -21,12 +21,12 @@ using trs::TCPMessage;
 class PSSCMessage
 {
 protected:
-	std::shared_ptr<TCPConnection> conn;
+    std::shared_ptr<TCPConnection> conn;
 public:
-	pssc_ins ins;
-	pssc_id messageId;
-	virtual ~PSSCMessage() = default;
-	virtual std::shared_ptr<TCPMessage> toTCPMessage() = 0;
+    pssc_ins ins;
+    pssc_id messageId;
+    virtual ~PSSCMessage() = default;
+    virtual std::shared_ptr<TCPMessage> toTCPMessage() = 0;
 };
 
 }

@@ -18,25 +18,25 @@ namespace trs
 class TCPClient
 {
 public:
-	TCPClient(
-	  int port,
-	  std::function<void(std::shared_ptr<TCPConnection>)> on_connected,
-	  std::function<void(std::shared_ptr<TCPConnection>)> on_disconnected
-	);
+    TCPClient(
+      int port,
+      std::function<void(std::shared_ptr<TCPConnection>)> on_connected,
+      std::function<void(std::shared_ptr<TCPConnection>)> on_disconnected
+    );
 
-	void Connect();
-	inline void Disconnect() { ioContext.stop(); }
+    void Connect();
+    inline void Disconnect() { ioContext.stop(); }
 
 private:
-	boost::asio::io_service ioContext;
-	std::shared_ptr<tcp::socket> sock;
-	tcp::endpoint ep;
-	std::thread contextThread;
+    boost::asio::io_service ioContext;
+    std::shared_ptr<tcp::socket> sock;
+    tcp::endpoint ep;
+    std::thread contextThread;
 
-	std::function<void(std::shared_ptr<TCPConnection>)> OnConnected;
-	std::function<void(std::shared_ptr<TCPConnection>)> OnDisconnected;
+    std::function<void(std::shared_ptr<TCPConnection>)> OnConnected;
+    std::function<void(std::shared_ptr<TCPConnection>)> OnDisconnected;
 
-	void Run();
+    void Run();
 };
 
 }

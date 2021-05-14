@@ -12,12 +12,12 @@
 
 int main()
 {
-	pssc::Node n;
+    pssc::Node n;
 
-	n.Initialize(20001);
+    n.Initialize(20001);
 
-	getchar();
-	return 0;
+    getchar();
+    return 0;
 
 
 }

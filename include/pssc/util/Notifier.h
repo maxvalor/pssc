@@ -15,31 +15,31 @@ namespace util {
 
 class Notifier
 {
-	std::mutex mtx;
-	std::condition_variable cv;
+    std::mutex mtx;
+    std::condition_variable cv;
 public:
 
     template<typename Rep, typename Period>
-	std::cv_status wait_for(const std::chrono::duration<Rep, Period>& time)
-	{
-    	std::unique_lock<std::mutex> lck(mtx);
-    	return cv.wait_for(lck, time);
-	}
+    std::cv_status wait_for(const std::chrono::duration<Rep, Period>& time)
+    {
+        std::unique_lock<std::mutex> lck(mtx);
+        return cv.wait_for(lck, time);
+    }
 
     void wait()
     {
-    	std::unique_lock<std::mutex> lck(mtx);
-    	cv.wait(lck);
+        std::unique_lock<std::mutex> lck(mtx);
+        cv.wait(lck);
     }
 
     void notify_one()
     {
-    	cv.notify_one();
+        cv.notify_one();
     }
 
     void notify_all()
     {
-    	cv.notify_all();
+        cv.notify_all();
     }
 };
 

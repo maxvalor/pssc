@@ -23,30 +23,30 @@ using boost::asio::ip::tcp;
 
 class TCPConnection : public std::enable_shared_from_this<TCPConnection>
 {
-	TCPConnection() = default;
+    TCPConnection() = default;
 public:
-	TCPConnection(const TCPConnection&) = default;
-	TCPConnection(std::shared_ptr<tcp::socket> sock,
-			std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected);
+    TCPConnection(const TCPConnection&) = default;
+    TCPConnection(std::shared_ptr<tcp::socket> sock,
+            std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected);
 
-	virtual ~TCPConnection();
+    virtual ~TCPConnection();
 
-	inline void SetOnMessage(std::function<void(std::shared_ptr<TCPMessage>)> funcMessageReceived)
-	{
-		this->funcMessageReceived = funcMessageReceived;
-	}
-	void PendMessage(std::shared_ptr<TCPMessage> msg);
+    inline void SetOnMessage(std::function<void(std::shared_ptr<TCPMessage>)> funcMessageReceived)
+    {
+        this->funcMessageReceived = funcMessageReceived;
+    }
+    void PendMessage(std::shared_ptr<TCPMessage> msg);
 
-	void Start();
-	void Stop();
+    void Start();
+    void Stop();
 
-	inline bool IsRunning() { return running; }
+    inline bool IsRunning() { return running; }
 
 private:
-	std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected;
-	std::function<void(std::shared_ptr<TCPMessage>)> funcMessageReceived;
+    std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected;
+    std::function<void(std::shared_ptr<TCPMessage>)> funcMessageReceived;
 
-	std::shared_ptr<tcp::socket> sock;
+    std::shared_ptr<tcp::socket> sock;
     std::atomic_bool running;
 
     std::mutex mtxSendQueue;
@@ -55,9 +55,9 @@ private:
     std::thread sendThread;
 
     void OnHeaderReceived(std::shared_ptr<TCPConnection> self, std::shared_ptr<TCPMessage::Header> header,
-    		boost::system::error_code ec, std::size_t receivedLength);
+            boost::system::error_code ec, std::size_t receivedLength);
     void OnBodyReceived(std::shared_ptr<TCPConnection> self, std::shared_ptr<TCPMessage> msg,
-    		boost::system::error_code ec, std::size_t receivedLength);
+            boost::system::error_code ec, std::size_t receivedLength);
 
     void ReadHeader();
     void ReadBody(std::shared_ptr<TCPMessage::Header> header);

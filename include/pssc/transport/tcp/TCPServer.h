@@ -21,32 +21,32 @@ using boost::asio::ip::tcp;
 class TCPServer
 {
 private:
-	static const std::uint64_t DEFAULT_MAX_CONNECTIONS = 100;
+    static const std::uint64_t DEFAULT_MAX_CONNECTIONS = 100;
 public:
-	TCPServer(
-		  int port,
-		  std::function<void(std::shared_ptr<TCPConnection>)> funcConnected,
-		  std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected,
-		  size_t maxConnection = DEFAULT_MAX_CONNECTIONS
-		  );
+    TCPServer(
+          int port,
+          std::function<void(std::shared_ptr<TCPConnection>)> funcConnected,
+          std::function<void(std::shared_ptr<TCPConnection>)> funcDisconnected,
+          size_t maxConnection = DEFAULT_MAX_CONNECTIONS
+          );
 
-	inline void Start() { Run(); }
-	inline void Stop() { ioContext.stop(); }
-
-private:
-	void Accept();
+    inline void Start() { Run(); }
+    inline void Stop() { ioContext.stop(); }
 
 private:
-	size_t currentConnections;
-	size_t maxConnection;
-	boost::asio::io_service ioContext;
-	std::shared_ptr<tcp::acceptor> acceptor;
-	tcp::endpoint ep;
+    void Accept();
 
-	std::function<void(std::shared_ptr<TCPConnection>)> OnConnected;
-	std::function<void(std::shared_ptr<TCPConnection>)> OnDisconnected;
+private:
+    size_t currentConnections;
+    size_t maxConnection;
+    boost::asio::io_service ioContext;
+    std::shared_ptr<tcp::acceptor> acceptor;
+    tcp::endpoint ep;
 
-	void Run();
+    std::function<void(std::shared_ptr<TCPConnection>)> OnConnected;
+    std::function<void(std::shared_ptr<TCPConnection>)> OnDisconnected;
+
+    void Run();
 };
 
 }

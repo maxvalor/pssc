@@ -24,27 +24,27 @@ bool Node::Initialize(int port)
     );
     execCall.detach();
 
-	client = std::make_shared<TCPClient>(
-		port,
-		std::bind(&Node::OnConntected, this, std::placeholders::_1),
-		std::bind(&Node::OnDisconntected, this, std::placeholders::_1)
-	);
+    client = std::make_shared<TCPClient>(
+        port,
+        std::bind(&Node::OnConntected, this, std::placeholders::_1),
+        std::bind(&Node::OnDisconntected, this, std::placeholders::_1)
+    );
 
-	client->Connect();
+    client->Connect();
 
-	return startNoti.wait_for(std::chrono::milliseconds(300)) == std::cv_status::no_timeout;
+    return startNoti.wait_for(std::chrono::milliseconds(300)) == std::cv_status::no_timeout;
 }
 
 void Node::OnConntected(std::shared_ptr<TCPConnection> conn)
 {
-	this->conn = conn;
-	DLOG(INFO) << "connected.";
+    this->conn = conn;
+    DLOG(INFO) << "connected.";
 
-	conn->SetOnMessage(std::bind(&Node::DispatchMessage, this, std::placeholders::_1));
+    conn->SetOnMessage(std::bind(&Node::DispatchMessage, this, std::placeholders::_1));
 
-	RegisterMessage req;
-	req.messageId = messageIdGen.Next();
-	conn->PendMessage(req.toTCPMessage());
+    RegisterMessage req;
+    req.messageId = messageIdGen.Next();
+    conn->PendMessage(req.toTCPMessage());
 }
 
 void Node::OnMessageReceived(std::shared_ptr<TCPMessage> msg)
@@ -57,27 +57,27 @@ void Node::OnMessageReceived(std::shared_ptr<TCPMessage> msg)
 
 void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
 {
-	pssc_ins ins;
-	msg->NextData(ins);
-	switch(ins)
-	{
-		case Ins::REGACK:
-		{
-			OnRegACK(msg);
-			break;
-		}
+    pssc_ins ins;
+    msg->NextData(ins);
+    switch(ins)
+    {
+        case Ins::REGACK:
+        {
+            OnRegACK(msg);
+            break;
+        }
 
-		case Ins::PUBLISH:
-		{
-			OnPublish(msg);
-			break;
-		}
+        case Ins::PUBLISH:
+        {
+            OnPublish(msg);
+            break;
+        }
 
-		case Ins::SUBACK:
-		{
-		    OnGenerelResponse(msg);
-			break;
-		}
+        case Ins::SUBACK:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
 
         case Ins::UNSUBACK:
         {
@@ -85,11 +85,11 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
             break;
         }
 
-		case Ins::ADVSRVACK:
-		{
-		    OnGenerelResponse(msg);
-			break;
-		}
+        case Ins::ADVSRVACK:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
 
         case Ins::CLOSESRVACK:
         {
@@ -97,24 +97,24 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
             break;
         }
 
-		case Ins::SERVICE_CALL:
-		{
-			OnSrvCall(msg);
-			break;
-		}
+        case Ins::SERVICE_CALL:
+        {
+            OnSrvCall(msg);
+            break;
+        }
 
-		case Ins::SERVICE_RESPONSE:
-		{
-		    OnGenerelResponse(msg);
-			break;
-		}
+        case Ins::SERVICE_RESPONSE:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
 
-		default:
-		{
-			DLOG(ERROR) << "UNKOWN MESSAGE";
-			break;
-		}
-	}
+        default:
+        {
+            DLOG(ERROR) << "UNKOWN MESSAGE";
+            break;
+        }
+    }
 }
 
 void Node::ExecPublish()
@@ -160,34 +160,34 @@ void Node::ExecCall()
 void Node::OnGenerelResponse(std::shared_ptr<TCPMessage> msg)
 {
     LOG(INFO) << "Received Response.";
-	pssc_id messageId;
-	msg->NextData(messageId);
-	msg->Reset();
-	msg->IgnoreBytes(SIZE_OF_PSSC_INS);
+    pssc_id messageId;
+    msg->NextData(messageId);
+    msg->Reset();
+    msg->IgnoreBytes(SIZE_OF_PSSC_INS);
 
-	mtxAcks.lock();
-//	acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
-	acks.insert(std::make_pair(messageId, msg));
-	auto funcNoti = mapAckNoti.at(messageId);
-	mapAckNoti.erase(messageId);
-	mtxAcks.unlock();
+    mtxAcks.lock();
+//    acks.insert(std::pair<pssc_id, std::shared_ptr<TCPMessage>>(messageId, msg));
+    acks.insert(std::make_pair(messageId, msg));
+    auto funcNoti = mapAckNoti.at(messageId);
+    mapAckNoti.erase(messageId);
+    mtxAcks.unlock();
 
-	funcNoti();
+    funcNoti();
 }
 
 void Node::OnRegACK(std::shared_ptr<TCPMessage> msg)
 {
-	RegACKMessage ack(msg);
-	if (ack.success)
-	{
-		LOG(INFO) << "Success to register node with id " << ack.nodeId;
-		nodeId = ack.nodeId;
-		startNoti.notify_one();
-	}
-	else
-	{
-		LOG(WARNING) << "Failed to register node.";
-	}
+    RegACKMessage ack(msg);
+    if (ack.success)
+    {
+        LOG(INFO) << "Success to register node with id " << ack.nodeId;
+        nodeId = ack.nodeId;
+        startNoti.notify_one();
+    }
+    else
+    {
+        LOG(WARNING) << "Failed to register node.";
+    }
 }
 
 void Node::OnSrvCall(std::shared_ptr<TCPMessage> msg)
@@ -197,7 +197,7 @@ void Node::OnSrvCall(std::shared_ptr<TCPMessage> msg)
     mtxCall.unlock();
     cvCall.notify_one();
 
-	LOG(INFO) << "Received Service Call.";
+    LOG(INFO) << "Received Service Call.";
 }
 
 void Node::OnPublish(std::shared_ptr<TCPMessage> msg)
@@ -212,64 +212,64 @@ void Node::OnPublish(std::shared_ptr<TCPMessage> msg)
 
 void Node::OnDisconntected(std::shared_ptr<TCPConnection> conn)
 {
-	running = false;
-	DLOG(INFO) << "disconnected.";
+    running = false;
+    DLOG(INFO) << "disconnected.";
 }
 
 bool Node::SendRequestAndWaitForResponse(pssc_id messageId, std::shared_ptr<TCPMessage> req, std::shared_ptr<TCPMessage>& resp)
 {
-	auto noti = std::make_shared<util::Notifier>();
-	auto f = [noti]()
-	{
-		noti->notify_one();
-	};
+    auto noti = std::make_shared<util::Notifier>();
+    auto f = [noti]()
+    {
+        noti->notify_one();
+    };
 
-	mtxAcks.lock();
-//	mapAckNoti.insert(std::pair<pssc_id, std::function<void()>>(messageId, f));
-	mapAckNoti.insert(std::make_pair(messageId, f));
-	mtxAcks.unlock();
-	conn->PendMessage(req);
+    mtxAcks.lock();
+//    mapAckNoti.insert(std::pair<pssc_id, std::function<void()>>(messageId, f));
+    mapAckNoti.insert(std::make_pair(messageId, f));
+    mtxAcks.unlock();
+    conn->PendMessage(req);
 
-//	auto rlt = noti->wait_for(std::chrono::milliseconds(3000));
-//	if (rlt == std::cv_status::timeout)
-//	{
-//		return false;
-//	}
-	noti->wait();
-	std::lock_guard<std::mutex> lck(mtxAcks);
-	resp = acks.at(messageId);
-	return true;
+//    auto rlt = noti->wait_for(std::chrono::milliseconds(3000));
+//    if (rlt == std::cv_status::timeout)
+//    {
+//        return false;
+//    }
+    noti->wait();
+    std::lock_guard<std::mutex> lck(mtxAcks);
+    resp = acks.at(messageId);
+    return true;
 }
 
 void Node::Publish(std::string topic, std::uint8_t*data, size_t size, bool feedback)
 {
-	PublishMessage req;
-	req.messageId = messageIdGen.Next();
-	req.publisherId = nodeId;
-	req.topic = topic;
-	req.sizeOfData = size;
-	req.data = data;
-	req.feedback = feedback;
+    PublishMessage req;
+    req.messageId = messageIdGen.Next();
+    req.publisherId = nodeId;
+    req.topic = topic;
+    req.sizeOfData = size;
+    req.data = data;
+    req.feedback = feedback;
 
-	conn->PendMessage(req.toTCPMessage());
+    conn->PendMessage(req.toTCPMessage());
 }
 
 
 bool Node::Subscribe(std::string topic)
 {
-	SubscribeMessage req;
-	req.messageId = messageIdGen.Next();
-	req.subscriberId = nodeId;
-	req.topic = topic;
+    SubscribeMessage req;
+    req.messageId = messageIdGen.Next();
+    req.subscriberId = nodeId;
+    req.topic = topic;
 
-	std::shared_ptr<TCPMessage> msg;
-	if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
-	{
-		return false;
-	}
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+    {
+        return false;
+    }
 
-	SubACKMessage resp(msg);
-	return resp.success;
+    SubACKMessage resp(msg);
+    return resp.success;
 }
 
 bool Node::UnSubscribe(std::string topic)
@@ -293,19 +293,19 @@ bool Node::UnSubscribe(std::string topic)
 
 bool Node::AdvertiseService(std::string srv_name)
 {
-	AdvertiseServiceMessage req;
-	req.messageId = messageIdGen.Next();
-	req.advertiserId = nodeId;
-	req.srv_name = srv_name;
+    AdvertiseServiceMessage req;
+    req.messageId = messageIdGen.Next();
+    req.advertiserId = nodeId;
+    req.srv_name = srv_name;
 
-	std::shared_ptr<TCPMessage> msg;
-	if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
-	{
-		return false;
-	}
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+    {
+        return false;
+    }
 
-	AdvSrvACKMessage resp(msg);
-	return resp.success;
+    AdvSrvACKMessage resp(msg);
+    return resp.success;
 }
 
 bool Node::CloseService(std::string srv_name)
@@ -327,33 +327,33 @@ bool Node::CloseService(std::string srv_name)
 
 std::shared_ptr<Node::ResponseData> Node::RemoteCall(std::string srv_name, std::uint8_t* data, size_t size)
 {
-	ServiceCallMessage req;
-	req.messageId = messageIdGen.Next();
-	req.callerId = nodeId;
-	req.srv_name = srv_name;
-	req.sizeOfData = size;
-	req.data = data;
+    ServiceCallMessage req;
+    req.messageId = messageIdGen.Next();
+    req.callerId = nodeId;
+    req.srv_name = srv_name;
+    req.sizeOfData = size;
+    req.data = data;
 
-	std::shared_ptr<TCPMessage> msg;
-	if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
-	{
-		return std::make_shared<Node::ResponseData>(false);
-	}
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(req.messageId, req.toTCPMessage(), msg))
+    {
+        return std::make_shared<Node::ResponseData>(false);
+    }
 
-	auto resp = std::make_shared<ServiceResponseMessage>(msg);
-	return std::make_shared<Node::ResponseData>(resp);
+    auto resp = std::make_shared<ServiceResponseMessage>(msg);
+    return std::make_shared<Node::ResponseData>(resp);
 }
 
 void Node::ResponseOperator::SendResponse(bool success,
-		std::uint8_t* data, size_t size)
+        std::uint8_t* data, size_t size)
 {
-	ServiceResponseMessage resp;
-	resp.success = success;
-	resp.messageId = messageId;
-	resp.callerId = callerId;
-	resp.sizeOfData = size;
-	resp.data = data;
-	conn->PendMessage(resp.toTCPMessage());
+    ServiceResponseMessage resp;
+    resp.success = success;
+    resp.messageId = messageId;
+    resp.callerId = callerId;
+    resp.sizeOfData = size;
+    resp.data = data;
+    conn->PendMessage(resp.toTCPMessage());
 }
 
 }

@@ -12,29 +12,29 @@
 #define SIZE_A 10
 
 int main(int argc, char*argv[]) {
-	pssc::Node node;
-	node.Initialize(20001);
-	std::uint8_t* data, *resp_data;
-	data = new std::uint8_t[SIZE_A];
-	size_t resp_size;
-	for (int i = 0; i < 10000; ++i)
-	{
-		LOG(INFO) << "call service start.";
-		auto resp = node.RemoteCall("a", data, SIZE_A);
-		LOG(INFO) << "call service: " << (resp->success ? "true" : "false");
-		if (resp->success)
-		{
+    pssc::Node node;
+    node.Initialize(20001);
+    std::uint8_t* data, *resp_data;
+    data = new std::uint8_t[SIZE_A];
+    size_t resp_size;
+    for (int i = 0; i < 10000; ++i)
+    {
+        LOG(INFO) << "call service start.";
+        auto resp = node.RemoteCall("a", data, SIZE_A);
+        LOG(INFO) << "call service: " << (resp->success ? "true" : "false");
+        if (resp->success)
+        {
             int data;
             memcpy(&data, resp->data, resp->sizeOfData);
             LOG(INFO) << "data: " << data;
-		}
-		else
-		{
-		    break;
-		}
-	}
+        }
+        else
+        {
+            break;
+        }
+    }
 
-	getchar();
+    getchar();
 
-	return 0;
+    return 0;
 }

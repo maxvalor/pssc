@@ -12,20 +12,20 @@
 
 //int main()
 //{
-//	TCPServer server(20001,
-//			[](std::shared_ptr<TCPConnection>){
-//				LOG(INFO) << "conntecd";
-//			},
-//			[](std::shared_ptr<TCPConnection>){
-//				LOG(INFO) << "disconntecd";
-//			});
-//	server.Start();
-//	return 0;
+//    TCPServer server(20001,
+//            [](std::shared_ptr<TCPConnection>){
+//                LOG(INFO) << "conntecd";
+//            },
+//            [](std::shared_ptr<TCPConnection>){
+//                LOG(INFO) << "disconntecd";
+//            });
+//    server.Start();
+//    return 0;
 //}
 
 int main()
 {
-	pssc::Core core(20001);
-	return core.Start();
+    pssc::Core core(20001);
+    return core.Start();
 }
 

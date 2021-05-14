@@ -18,82 +18,82 @@ namespace pssc
 
 Core::Core(int port)
 {
-	server = std::make_unique<TCPServer>(
-			port,
-			std::bind(&Core::OnConnected, this, std::placeholders::_1),
-			std::bind(&Core::OnDisconnected, this, std::placeholders::_1)
-	);
+    server = std::make_unique<TCPServer>(
+            port,
+            std::bind(&Core::OnConnected, this, std::placeholders::_1),
+            std::bind(&Core::OnDisconnected, this, std::placeholders::_1)
+    );
 }
 
 void Core::OnConnected(std::shared_ptr<TCPConnection> conn)
 {
-	DLOG(INFO) << "client connected.";
+    DLOG(INFO) << "client connected.";
 
-	conn->SetOnMessage(
-		std::bind(&Core::DispatchMessage, this, conn, std::placeholders::_1)
-	);
+    conn->SetOnMessage(
+        std::bind(&Core::DispatchMessage, this, conn, std::placeholders::_1)
+    );
 
-	conn->Start();
+    conn->Start();
 }
 
 void Core::OnDisconnected(std::shared_ptr<TCPConnection> conn)
 {
-	// remove name->connection
-	for (auto & node : nodes)
-	{
-		if (node.second.get() == conn.get())
-		{
-			DLOG(INFO) << "node with id " << node.first << " was disconnected.";
-			auto nodeId = node.first;
-			nodes.erase(nodeId);
+    // remove name->connection
+    for (auto & node : nodes)
+    {
+        if (node.second.get() == conn.get())
+        {
+            DLOG(INFO) << "node with id " << node.first << " was disconnected.";
+            auto nodeId = node.first;
+            nodes.erase(nodeId);
 
-			// close service
-			pssc_write_guard guard(rwlckSrvs);
-			std::list<std::string> srv_names;
-			for(auto srv : srvs)
-			{
-			    if (srv.second == nodeId)
-			    {
-			        srv_names.push_back(srv.first);
-			    }
-			}
+            // close service
+            pssc_write_guard guard(rwlckSrvs);
+            std::list<std::string> srv_names;
+            for(auto srv : srvs)
+            {
+                if (srv.second == nodeId)
+                {
+                    srv_names.push_back(srv.first);
+                }
+            }
 
             for(auto srv_name : srv_names)
             {
                 srvs.erase(srv_name);
             }
 
-			return;
-		}
-	}
+            return;
+        }
+    }
 }
 
 void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	if (conn->IsRunning())
-	{
-		pssc_ins ins;
-		msg->NextData(ins);
+    if (conn->IsRunning())
+    {
+        pssc_ins ins;
+        msg->NextData(ins);
 
-		switch (ins)
-		{
-			case Ins::REGISTER:
-			{
-				Register(conn, msg);
-				break;
-			}
+        switch (ins)
+        {
+            case Ins::REGISTER:
+            {
+                Register(conn, msg);
+                break;
+            }
 
-			case Ins::PUBLISH:
-			{
-				Publish(conn, msg);
-				break;
-			}
+            case Ins::PUBLISH:
+            {
+                Publish(conn, msg);
+                break;
+            }
 
-			case Ins::SUBSCRIBE:
-			{
-				Subscribe(conn, msg);
-				break;
-			}
+            case Ins::SUBSCRIBE:
+            {
+                Subscribe(conn, msg);
+                break;
+            }
 
             case Ins::UNSUBSCRIBE:
             {
@@ -101,23 +101,23 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
                 break;
             }
 
-			case Ins::ADDVERTISE_SERVICE:
-			{
-				AdvertiseService(conn, msg);
-				break;
-			}
+            case Ins::ADDVERTISE_SERVICE:
+            {
+                AdvertiseService(conn, msg);
+                break;
+            }
 
-			case Ins::SERVICE_CALL:
-			{
-				CallService(conn, msg);
-				break;
-			}
+            case Ins::SERVICE_CALL:
+            {
+                CallService(conn, msg);
+                break;
+            }
 
-			case Ins::SERVICE_RESPONSE:
-			{
-				ResponseService(conn, msg);
-				break;
-			}
+            case Ins::SERVICE_RESPONSE:
+            {
+                ResponseService(conn, msg);
+                break;
+            }
 
             case Ins::CLOSE_SERVICE:
             {
@@ -125,47 +125,47 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
                 break;
             }
 
-			default:
-			{
-				DLOG(ERROR) << "UNKOWN MESSAGE";
-				break;
-			}
-		}
-	}
+            default:
+            {
+                DLOG(ERROR) << "UNKOWN MESSAGE";
+                break;
+            }
+        }
+    }
 }
 
 void Core::Register(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	DLOG(INFO) << "Register Received.";
-	RegisterMessage req(msg);
-	RegACKMessage ack;
-	ack.messageId = req.messageId;
+    DLOG(INFO) << "Register Received.";
+    RegisterMessage req(msg);
+    RegACKMessage ack;
+    ack.messageId = req.messageId;
 
-	pssc_write_guard guard(rwlckNodes);
-	ack.nodeId = nodeIdGen.Next();
-	if (nodes.find(ack.nodeId) != nodes.end())
-	{
-		ack.success = false;
-	}
-	else
-	{
-		nodes.insert(std::make_pair(ack.nodeId, conn));
-		ack.success = true;
-	}
+    pssc_write_guard guard(rwlckNodes);
+    ack.nodeId = nodeIdGen.Next();
+    if (nodes.find(ack.nodeId) != nodes.end())
+    {
+        ack.success = false;
+    }
+    else
+    {
+        nodes.insert(std::make_pair(ack.nodeId, conn));
+        ack.success = true;
+    }
 
-	conn->PendMessage(ack.toTCPMessage());
-	DLOG(INFO) << "Register Responsed with success:" << ack.success;
+    conn->PendMessage(ack.toTCPMessage());
+    DLOG(INFO) << "Register Responsed with success:" << ack.success;
 }
 
 
 void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	PublishMessage req(msg);
-	DLOG(WARNING) << "PUBLISH: publisher id:" << req.publisherId;
+    PublishMessage req(msg);
+    DLOG(WARNING) << "PUBLISH: publisher id:" << req.publisherId;
 
-	pssc_read_guard guardTopics(rwlckTopics);
-	auto&& subscribers = topics.find(req.topic);
-	DLOG(WARNING) << "publish data size: " << req.sizeOfData;
+    pssc_read_guard guardTopics(rwlckTopics);
+    auto&& subscribers = topics.find(req.topic);
+    DLOG(WARNING) << "publish data size: " << req.sizeOfData;
 
     if (subscribers->second.size() > 1)
     {
@@ -228,41 +228,41 @@ void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessa
 
 void Core::Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	SubscribeMessage req(msg);
-	SubACKMessage resp;
+    SubscribeMessage req(msg);
+    SubACKMessage resp;
 
-	DLOG(INFO) << "SUBSCRIBE: " << req.subscriberId << "," << req.topic;
+    DLOG(INFO) << "SUBSCRIBE: " << req.subscriberId << "," << req.topic;
 
-	pssc_write_guard guard(rwlckTopics);
-	if (topics.find(req.topic) == topics.end())
-	{
-		std::list<pssc_id> subscribers;
-		subscribers.emplace_back(req.subscriberId);
-		topics.insert(std::make_pair(req.topic, subscribers));
+    pssc_write_guard guard(rwlckTopics);
+    if (topics.find(req.topic) == topics.end())
+    {
+        std::list<pssc_id> subscribers;
+        subscribers.emplace_back(req.subscriberId);
+        topics.insert(std::make_pair(req.topic, subscribers));
 
-		resp.success = true;
-	}
-	else
-	{
-		try {
-			auto& subscribers = topics.at(req.topic);
-			if (std::find(subscribers.begin(), subscribers.end(), req.subscriberId) == subscribers.end())
-			{
-				subscribers.push_back(req.subscriberId);
-				DLOG(INFO) << "SUBSCRIBE: OK, count of subscriber:" << subscribers.size();
-				resp.success = true;
-			}
-		}
-		catch (...)
-		{
-			DLOG(ERROR) << "SUBSCRIBE: ???";
-			resp.success = false;
-		}
-	}
+        resp.success = true;
+    }
+    else
+    {
+        try {
+            auto& subscribers = topics.at(req.topic);
+            if (std::find(subscribers.begin(), subscribers.end(), req.subscriberId) == subscribers.end())
+            {
+                subscribers.push_back(req.subscriberId);
+                DLOG(INFO) << "SUBSCRIBE: OK, count of subscriber:" << subscribers.size();
+                resp.success = true;
+            }
+        }
+        catch (...)
+        {
+            DLOG(ERROR) << "SUBSCRIBE: ???";
+            resp.success = false;
+        }
+    }
 
-	resp.messageId = req.messageId;
-	conn->PendMessage(resp.toTCPMessage());
-	DLOG(INFO) << "SUBSCRIBE response: " << req.subscriberId << "," << resp.success;
+    resp.messageId = req.messageId;
+    conn->PendMessage(resp.toTCPMessage());
+    DLOG(INFO) << "SUBSCRIBE response: " << req.subscriberId << "," << resp.success;
 }
 
 void Core::UnSubscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
@@ -308,41 +308,41 @@ void Core::UnSubscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPM
 
 void Core::AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	AdvertiseServiceMessage req(msg);
-	AdvSrvACKMessage ack;
-	ack.messageId = req.messageId;
+    AdvertiseServiceMessage req(msg);
+    AdvSrvACKMessage ack;
+    ack.messageId = req.messageId;
 
-	DLOG(INFO) << "ADVERTISE SERVICE: " << req.advertiserId << "," << req.srv_name;
+    DLOG(INFO) << "ADVERTISE SERVICE: " << req.advertiserId << "," << req.srv_name;
 
-	pssc_write_guard guard(rwlckSrvs);
-	if (srvs.find(req.srv_name) != srvs.end())
-	{
-		ack.success = false;
+    pssc_write_guard guard(rwlckSrvs);
+    if (srvs.find(req.srv_name) != srvs.end())
+    {
+        ack.success = false;
 
-		conn->PendMessage(ack.toTCPMessage());
-		DLOG(INFO) << "NOT DONE.";
-	}
-	else
-	{
-		srvs.insert(std::make_pair(req.srv_name, req.advertiserId));
-		ack.success = true;
+        conn->PendMessage(ack.toTCPMessage());
+        DLOG(INFO) << "NOT DONE.";
+    }
+    else
+    {
+        srvs.insert(std::make_pair(req.srv_name, req.advertiserId));
+        ack.success = true;
 
-		conn->PendMessage(ack.toTCPMessage());
+        conn->PendMessage(ack.toTCPMessage());
 
-		DLOG(INFO) << "DONE.";
-	}
+        DLOG(INFO) << "DONE.";
+    }
 }
 
 
 void Core::CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	ServiceCallMessage req(msg);
+    ServiceCallMessage req(msg);
 
-	DLOG(INFO) << "CALL SERVICE: callerId:" << req.callerId
-			<< ", messageId:" << req.messageId
-			<< ", srv_name:" << req.srv_name;
+    DLOG(INFO) << "CALL SERVICE: callerId:" << req.callerId
+            << ", messageId:" << req.messageId
+            << ", srv_name:" << req.srv_name;
 
-	pssc_read_guard guard(rwlckSrvs);
+    pssc_read_guard guard(rwlckSrvs);
     auto fd = srvs.find(req.srv_name);
     if (fd == srvs.end())
     {
@@ -371,13 +371,13 @@ void Core::CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPM
 
 void Core::ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
-	ServiceResponseMessage req(msg);
+    ServiceResponseMessage req(msg);
 
-	DLOG(INFO) << "RESPONSE SERVICE: clientId:" << req.callerId
-				<< ", messageId:" << req.messageId;
-	auto srv_conn =  nodes.at(req.callerId);
+    DLOG(INFO) << "RESPONSE SERVICE: clientId:" << req.callerId
+                << ", messageId:" << req.messageId;
+    auto srv_conn =  nodes.at(req.callerId);
 
-	srv_conn->PendMessage(msg);
+    srv_conn->PendMessage(msg);
 }
 
 void Core::CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
@@ -409,9 +409,9 @@ void Core::CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCP
 
 int Core::Start()
 {
-	DLOG(INFO) << "start service.";
-	server->Start();
-	return 0;
+    DLOG(INFO) << "start service.";
+    server->Start();
+    return 0;
 }
 
 }

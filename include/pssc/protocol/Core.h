@@ -26,35 +26,35 @@ using namespace trs;
 class Core
 {
 public:
-	Core(int port);
-	int Start();
+    Core(int port);
+    int Start();
 private:
-	std::unique_ptr<TCPServer> server;
+    std::unique_ptr<TCPServer> server;
 
-	IDGenerator<std::uint64_t> nodeIdGen;
+    IDGenerator<std::uint64_t> nodeIdGen;
 
-	pssc_rw_mutex rwlckNodes;
-	std::unordered_map<pssc_id, std::shared_ptr<TCPConnection>> nodes;
+    pssc_rw_mutex rwlckNodes;
+    std::unordered_map<pssc_id, std::shared_ptr<TCPConnection>> nodes;
 
-	pssc_rw_mutex rwlckTopics;
-	std::unordered_map<std::string, std::list<pssc_id>> topics;
+    pssc_rw_mutex rwlckTopics;
+    std::unordered_map<std::string, std::list<pssc_id>> topics;
 
-	pssc_rw_mutex rwlckSrvs;
-	std::unordered_map<std::string, pssc_id> srvs;
+    pssc_rw_mutex rwlckSrvs;
+    std::unordered_map<std::string, pssc_id> srvs;
 
-	void OnConnected(std::shared_ptr<TCPConnection> conn);
-	void OnDisconnected(std::shared_ptr<TCPConnection> conn);
-	void DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void OnConnected(std::shared_ptr<TCPConnection> conn);
+    void OnDisconnected(std::shared_ptr<TCPConnection> conn);
+    void DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 
 
-	void Register(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void UnSubscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
-	void CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void Register(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void Subscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void UnSubscribe(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void AdvertiseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 };
 
 };
