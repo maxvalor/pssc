@@ -83,6 +83,12 @@ void Core::DispatchMessage(std::shared_ptr<TCPConnection> conn, std::shared_ptr<
                 break;
             }
 
+            case Ins::QUERY_SUBSCRIBER_NUMBER:
+            {
+                QuerySubNum(conn, msg);
+                break;
+            }
+
             case Ins::PUBLISH:
             {
                 Publish(conn, msg);
@@ -157,6 +163,21 @@ void Core::Register(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMess
     DLOG(INFO) << "Register Responsed with success:" << ack.success;
 }
 
+void Core::QuerySubNum(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
+{
+    QuerySubNumMessage req(msg);
+    DLOG(WARNING) << "QUERY_SUBSCRIBER_NUMBER: inquirerId:" << req.inquirerId;
+
+    pssc_read_guard guardTopics(rwlckTopics);
+    auto&& subscribers = topics.find(req.topic);
+
+    QuerySubNumACKMessage resp;
+    resp.messageId = req.messageId;
+    resp.subNum = ((subscribers == topics.end()) ? (0) : (subscribers->second.size()));
+
+    conn->PendMessage(resp.toTCPMessage());
+    DLOG(INFO) << "QUERY_SUBSCRIBER_NUMBER Responsed with subNum:" << resp.subNum;
+}
 
 void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg)
 {
@@ -167,60 +188,59 @@ void Core::Publish(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessa
     auto&& subscribers = topics.find(req.topic);
     DLOG(WARNING) << "publish data size: " << req.sizeOfData;
 
+    if (subscribers == topics.end())
+    {
+        return;
+    }
+
     if (subscribers->second.size() > 1)
     {
         std::vector<std::future<bool>> fs;
-        if (subscribers != topics.end())
+        for (auto& subscriberId : subscribers->second)
         {
-            for (auto& subscriberId : subscribers->second)
+            if (subscriberId == req.publisherId && !req.feedback)
             {
-                if (subscriberId == req.publisherId && !req.feedback)
-                {
-                    continue;
-                }
-                DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
-                pssc_read_guard guardNodes(rwlckNodes);
-                try {
-                    auto& subConn = nodes.at(subscriberId);
-
-                    auto f = std::async([subConn, msg](){
-                        subConn->PendMessage(msg);
-                        return true;
-                    });
-                    fs.emplace_back(std::move(f));
-                } catch (...) {
-                    // disconnected subscriber, do nothing
-                    std::this_thread::yield();
-                }
+                continue;
             }
+            DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
+            pssc_read_guard guardNodes(rwlckNodes);
+            try {
+                auto& subConn = nodes.at(subscriberId);
 
-            for (auto& f :  fs)
-            {
-                f.get();
+                auto f = std::async([subConn, msg](){
+                    subConn->PendMessage(msg);
+                    return true;
+                });
+                fs.emplace_back(std::move(f));
+            } catch (...) {
+                // disconnected subscriber, do nothing
+                std::this_thread::yield();
             }
+        }
+
+        for (auto& f :  fs)
+        {
+            f.get();
         }
     }
     else
     {
-        if (subscribers != topics.end())
+        for (auto& subscriberId : subscribers->second)
         {
-            for (auto& subscriberId : subscribers->second)
+            if (subscriberId == req.publisherId && !req.feedback)
             {
-                if (subscriberId == req.publisherId && !req.feedback)
-                {
-                    continue;
-                }
-                DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
-                pssc_read_guard guardNodes(rwlckNodes);
-                try {
-                    auto& subConn = nodes.at(subscriberId);
+                continue;
+            }
+            DLOG(WARNING) << "publish topic: " + req.topic + " to node with id: " << subscriberId;
+            pssc_read_guard guardNodes(rwlckNodes);
+            try {
+                auto& subConn = nodes.at(subscriberId);
 
-                    subConn->PendMessage(msg);
+                subConn->PendMessage(msg);
 
-                } catch (...) {
-                    // disconnected subscriber, do nothing
-                    std::this_thread::yield();
-                }
+            } catch (...) {
+                // disconnected subscriber, do nothing
+                std::this_thread::yield();
             }
         }
     }
@@ -415,6 +435,3 @@ int Core::Start()
 }
 
 }
-
-
-

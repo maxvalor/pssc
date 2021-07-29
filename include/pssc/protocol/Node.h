@@ -110,6 +110,8 @@ public:
     }
 
     bool Initialize(int port);
+
+    pssc_size QuerySubNum(std::string topic);
     void Publish(std::string topic, std::uint8_t* data, size_t size, bool feedback = false);
     bool Subscribe(std::string topic);
     bool UnSubscribe(std::string topic);

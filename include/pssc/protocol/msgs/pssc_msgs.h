@@ -21,6 +21,8 @@
 #include "UnSubACKMessage.h"
 #include "CloseServiceMessage.h"
 #include "CloseSrvACKMessage.h"
+#include "QuerySubNumMessage.h"
+#include "QuerySubNumACKMessage.h"
 
 
 #endif /* INCLUDE_PSSC_PROTOCOL_MSGS_PSSC_MSGS_H_ */

@@ -30,6 +30,8 @@
 
 #endif /* BUILD_DEPENDS_ON_PLATFORM */
 
+#define PSSC_SIZE_OF_HUGE_MSG 10000u
+
 namespace pssc {
 
 using pssc_size = size_t;

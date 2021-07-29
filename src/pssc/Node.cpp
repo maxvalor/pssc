@@ -67,6 +67,12 @@ void Node::DispatchMessage(std::shared_ptr<TCPMessage> msg)
             break;
         }
 
+        case Ins::QUERY_SUBSCRIBER_NUMBER_ACK:
+        {
+            OnGenerelResponse(msg);
+            break;
+        }
+
         case Ins::PUBLISH:
         {
             OnPublish(msg);
@@ -241,6 +247,23 @@ bool Node::SendRequestAndWaitForResponse(pssc_id messageId, std::shared_ptr<TCPM
     return true;
 }
 
+pssc_size Node::QuerySubNum(std::string topic)
+{
+    QuerySubNumMessage query;
+    query.messageId = messageIdGen.Next();
+    query.inquirerId = nodeId;
+    query.topic = topic;
+
+    std::shared_ptr<TCPMessage> msg;
+    if(!SendRequestAndWaitForResponse(query.messageId, query.toTCPMessage(), msg))
+    {
+        return 0;
+    }
+
+    QuerySubNumACKMessage resp(msg);
+    return resp.subNum;
+}
+
 void Node::Publish(std::string topic, std::uint8_t*data, size_t size, bool feedback)
 {
     PublishMessage req;
@@ -357,5 +380,3 @@ void Node::ResponseOperator::SendResponse(bool success,
 }
 
 }
-
-

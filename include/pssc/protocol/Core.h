@@ -55,6 +55,7 @@ private:
     void CallService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
     void ResponseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
     void CloseService(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
+    void QuerySubNum(std::shared_ptr<TCPConnection> conn, std::shared_ptr<TCPMessage> msg);
 };
 
 };
